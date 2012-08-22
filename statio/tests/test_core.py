@@ -13,7 +13,6 @@ Test the core module.
 
 import sys
 import os
-import tempfile
 import unittest
 
 #Forced to manipulate path - have yet to find alternative built-in method.
@@ -22,18 +21,7 @@ if not libpath in sys.path:
     sys.path.insert(1, libpath)
 del libpath
 
-from core import sum_values
-from core import sma_values
-from core import ema_values
-from core import wwma_values
-from core import varp_values
-from core import var_values
-from core import stdp_values
-from core import std_values
-from core import max_values
-from core import top_values
-from core import min_values
-from core import bottom_values
+from core import *
 
 
 class Sum_Values_TestCase(unittest.TestCase):
@@ -74,6 +62,41 @@ class Sum_Values_TestCase(unittest.TestCase):
         series = [21.25, 25.5, 32.25]
         rows = sum_values(series, 3)
         self.assertEquals(rows, [21.25, 46.75, 79.0])
+
+
+class Sum_Value_TestCase(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_empty_series(self):
+        series = []
+        result = sum_value(series, 3)
+        self.assertEquals(result, None)
+
+    def test_no_series(self):
+        series = None
+        result = sum_value(series, 3)
+        self.assertEquals(result, None)
+
+    def test_period_float(self):
+        series = [21, 25, 32, 55, 22]
+        result = sum_value(series, 3.0)
+        self.assertEquals(result, 109)
+
+    def test_calc_nowindow(self):
+        series = [21, 25, 32, 55, 22]
+        result = sum_value(series)
+        self.assertEquals(result, 155)
+
+    def test_calc_window(self):
+        series = [21, 25, 32, 55, 22]
+        result = sum_value(series, 3)
+        self.assertEquals(result, 109)
+
+    def test_basic_floats(self):
+        series = [21.25, 25.5, 32.25]
+        result = sum_value(series, 3)
+        self.assertEquals(result, 79.0)
 
 
 class Sma_Values_TestCase(unittest.TestCase):
@@ -117,6 +140,47 @@ class Sma_Values_TestCase(unittest.TestCase):
         rows = sma_values(series, 3)
         rows = ['%.2f' % x for x in rows]
         self.assertEquals(rows, ['21.25', '23.38', '26.33'])
+
+
+class Sma_Value_TestCase(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_empty_series(self):
+        series = []
+        result = sma_value(series, 3)
+        self.assertEquals(result, None)
+
+    def test_no_series(self):
+        """
+        """
+        result = sma_value(None)
+        self.assertEquals(result, None)
+
+    def test_period_float(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % sma_value(series, 3.0)
+        self.assertEquals(result, '36.33')
+
+    def test_calc_nowindow(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % sma_value(series)
+        self.assertEquals(result, "31.00")
+
+    def test_period_too_big(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % sma_value(series, 10)
+        self.assertEquals(result, "31.00")
+
+    def test_calc_window(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % sma_value(series, 3)
+        self.assertEquals(result, "36.33")
+
+    def test_basic_floats(self):
+        series = [21.25, 25.5, 32.25]
+        result = '%.2f' % sma_value(series, 3)
+        self.assertEquals(result, "26.33")
 
 
 class Ema_Values_TestCase(unittest.TestCase):
@@ -178,7 +242,6 @@ class Wwma_Values_TestCase(unittest.TestCase):
         """
         Must pass series of values to calculate.
         """
-        series = None
         self.assertRaises(TypeError, wwma_values)
 
     def test_period_float(self):
@@ -249,6 +312,41 @@ class Varp_Values_TestCase(unittest.TestCase):
         self.assertEquals(rows, ['0.00', '4.52', '20.51'])
 
 
+class Varp_Value_TestCase(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_empty_series(self):
+        series = []
+        result = varp_value(series, 3)
+        self.assertEquals(result, None)
+
+    def test_no_series(self):
+        series = None
+        result = varp_value(series, 3)
+        self.assertEquals(result, None)
+
+    def test_period_float(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % varp_value(series, 3.0)
+        self.assertEquals(result, '190.89')
+
+    def test_calc_nowindow(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % varp_value(series)
+        self.assertEquals(result, '158.80')
+
+    def test_calc_window(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % varp_value(series, 3)
+        self.assertEquals(result, '190.89')
+
+    def test_basic_floats(self):
+        series = [21.25, 25.5, 32.25]
+        result = '%.2f' % varp_value(series, 3)
+        self.assertEquals(result, '20.51')
+
+
 class Var_Values_TestCase(unittest.TestCase):
     def setUp(self):
         pass
@@ -293,7 +391,42 @@ class Var_Values_TestCase(unittest.TestCase):
         self.assertEquals(rows, ['0.00', '9.03', '30.77'])
 
 
-class Std_Values_TestCase(unittest.TestCase):
+class Var_Value_TestCase(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_empty_series(self):
+        series = []
+        rows = var_value(series, 3)
+        self.assertEquals(rows, None)
+
+    def test_no_series(self):
+        series = None
+        rows = var_value(series, 3)
+        self.assertEquals(rows, None)
+
+    def test_period_float(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % var_value(series, 3.0)
+        self.assertEquals(result, '286.33')
+
+    def test_calc_nowindow(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % var_value(series)
+        self.assertEquals(result, '198.50')
+
+    def test_calc_window(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % var_value(series, 3)
+        self.assertEquals(result, '286.33')
+
+    def test_basic_floats(self):
+        series = [21.25, 25.5, 32.25]
+        result = '%.2f' % var_value(series, 3)
+        self.assertEquals(result, '30.77')
+
+
+class Stdp_Values_TestCase(unittest.TestCase):
     def setUp(self):
         pass
 
@@ -335,6 +468,41 @@ class Std_Values_TestCase(unittest.TestCase):
         rows = stdp_values(series, 3)
         rows = ['%.2f' % x for x in rows]
         self.assertEquals(rows, ['0.00', '2.13', '4.53'])
+
+
+class Stdp_Value_TestCase(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_empty_series(self):
+        series = []
+        result = stdp_value(series, 3)
+        self.assertEquals(result, None)
+
+    def test_no_series(self):
+        series = None
+        result = stdp_value(series, 3)
+        self.assertEquals(result, None)
+
+    def test_period_float(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % stdp_value(series, 3.0)
+        self.assertEquals(result, '13.82')
+
+    def test_calc_nowindow(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % stdp_value(series)
+        self.assertEquals(result, '12.60')
+
+    def test_calc_window(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % stdp_value(series, 3)
+        self.assertEquals(result, '13.82')
+
+    def test_basic_floats(self):
+        series = [21.25, 25.5, 32.25]
+        result = '%.2f' % stdp_value(series, 3)
+        self.assertEquals(result, '4.53')
 
 
 class Std_Values_TestCase(unittest.TestCase):
@@ -379,6 +547,41 @@ class Std_Values_TestCase(unittest.TestCase):
         rows = std_values(series, 3)
         rows = ['%.2f' % x for x in rows]
         self.assertEquals(rows, ['0.00', '3.01', '5.55'])
+
+
+class Std_Values_TestCase(unittest.TestCase):
+    def setUp(self):
+        pass
+
+    def test_empty_series(self):
+        series = []
+        result = std_value(series, 3)
+        self.assertEquals(result, None)
+
+    def test_no_series(self):
+        series = None
+        result = std_value(series, 3)
+        self.assertEquals(result, None)
+
+    def test_period_float(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % std_value(series, 3.0)
+        self.assertEquals(result, '16.92')
+
+    def test_calc_nowindow(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % std_value(series)
+        self.assertEquals(result, '14.09')
+
+    def test_calc_window(self):
+        series = [21, 25, 32, 55, 22]
+        result = '%.2f' % std_value(series, 3)
+        self.assertEquals(result, '16.92')
+
+    def test_basic_floats(self):
+        series = [21.25, 25.5, 32.25]
+        result = '%.2f' % std_value(series, 3)
+        self.assertEquals(result, '5.55')
 
 
 class Max_Values_TestCase(unittest.TestCase):

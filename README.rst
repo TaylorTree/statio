@@ -1,8 +1,9 @@
 statio
 ======
-**statio** is a statistical Python libary geared towards series building by running computations across a sliding window of values.
+**statio** is a statistical Python libary geared towards running computations across
+a sliding window of values.
 
-:Download: http://pypi.python.org/pypi/statio/0.0.1
+:Download: http://pypi.python.org/pypi/statio/0.0.2
 :Source: https://github.com/TaylorTree/statio
 
 

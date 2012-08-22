@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2011, Mike Taylor
+# Copyright (c) 2012, Mike Taylor
 #
 # This file is part of statio released under MIT license.
 # See the LICENSE for more information.
 """
 
-Collection of functions used to calculate running statistics
-over a sliding window of values.
+Collection of functions used to calculate statistics.
+
+The _values functions typically run over a sliding window and return
+a list of computed stats.
+
+The _value functions return a single computed stat.
 
 """
 
@@ -19,12 +23,10 @@ import bisect
 def sum_values(values, period=None):
     """Returns list of running sums.
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
-    :rtype: list of windowed sums.
+    :param values: list of values to iterate.
+    :param period: (optional) # of values to include in computation.
+        * None - includes all values in computation.
+    :rtype: list of summed values.
 
     Examples:
     >>> values = [34, 30, 29, 34, 38, 25, 35]
@@ -55,15 +57,44 @@ def sum_values(values, period=None):
     return results
 
 
+def sum_value(values, period=None):
+    """Returns the final sum.
+
+    :param values: list of values to iterate.
+    :param period: (optional) # of values to include in computation.
+        * None - includes all values in computation.
+    :rtype: the final sum.
+
+    Examples:
+    >>> values = [34, 30, 29, 34, 38, 25, 35]
+    >>> result = sum_value(values, 3)  #using 3 period window.
+    >>> print "%.2f" % result
+    98.00
+    """
+    if not values:
+        return None
+
+    maxbar = len(values)
+
+    beg = 0
+    if period:
+        if period < 1:
+            raise ValueError("period must be 1 or greater")
+
+        beg = maxbar - int(period)
+        if beg < 0:
+            beg = 0
+
+    return sum(values[beg:])
+
+
 def sma_values(values, period=None):
     """Returns list of running simple moving averages.
 
     :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
-    :rtype: list of windowed simple moving averages.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
+    :rtype: list of simple moving averages.
 
     Examples:
     >>> values = [34, 30, 29, 34, 38, 25, 35]
@@ -95,14 +126,43 @@ def sma_values(values, period=None):
     return results
 
 
+def sma_value(values, period=None):
+    """Returns the final simple moving average.
+
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
+    :rtype: the final simple moving average.
+
+    Examples:
+    >>> values = [34, 30, 29, 34, 38, 25, 35]
+    >>> result = sma_value(values, 3)  #using 3 period window.
+    >>> print "%.2f" % result
+    32.67
+    """
+    if not values:
+        return None
+
+    maxbar = len(values)
+
+    beg = 0
+    if period:
+        if period < 1:
+            raise ValueError("period must be 1 or greater")
+
+        beg = maxbar - int(period)
+        if beg < 0:
+            beg = 0
+
+    return sum(values[beg:]) / float(len(values[beg:]))
+
+
 def ema_values(values, period=None, smoothing=None):
     """Returns list of running exponential moving averages.
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :param smoothing: (optional) smoothing factor.
         * valid values: between 0 - 1.
         * None - (default) use formula = 2.0 / (period + 1.0).
@@ -152,11 +212,9 @@ def wwma_values(values, period=None):
 
     Approximation of the ema.
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :rtype: list of windowed Welles Wilder moving averages.
 
     Examples:
@@ -195,11 +253,9 @@ def psa_values(values, period=None):
     Subliminal Messages:
     http://subluminal.wordpress.com/2008/07/31/running-standard-deviations/
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :rtype: list of windowed Power Sum averages.
 
     Examples:
@@ -233,21 +289,20 @@ def psa_values(values, period=None):
     return results
 
 
-def _varbase(values, period=None, population=False):
+def _varbases(values, period=None, population=False):
     """
     Returns list of running variances or standard deviations.
 
-    :param period: how many items to include in calculation.
-        * period=1 includes current index only in calculation.
-        * period=2 includes current index and -1 in calculation.
-        * period=None includes all items in calculation (Default).
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :param population:
         * True - entire population, n.
         * False - sample set, n - 1 (default).
 
     Examples:
     >>> values = [32.47, 32.70, 32.77, 33.11, 33.25, 33.23, 33.23]
-    >>> results = _varbase(values, 3, population=True)
+    >>> results = _varbases(values, 3, population=True)
     >>> ["%.2f" % x for x in results]
     ['0.00', '0.01', '0.02', '0.03', '0.04', '0.00', '0.00']
     """
@@ -292,14 +347,65 @@ def _varbase(values, period=None, population=False):
     return results
 
 
+def _varbase(values, period=None, population=False):
+    """
+    Returns final variance.
+
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
+    :param population:
+        * True - entire population, n.
+        * False - sample set, n - 1 (default).
+
+    Examples:
+    >>> values = [32.47, 32.70, 32.77, 33.11, 33.25, 33.23, 33.23]
+    >>> result = _varbase(values, 3, population=True)
+    >>> print "%.2f" % result
+    0.00
+    """
+    if not values:
+        return None
+
+    maxbar = len(values)
+
+    beg = 0
+    if period:
+        if period < 1:
+            raise ValueError("period must be 1 or greater")
+
+        beg = maxbar - int(period)
+        if beg < 0:
+            beg = 0
+
+    itemcnt = len(values[beg:])
+
+    if itemcnt < 2:
+        return 0.0
+
+    sample_adjust = 0.0
+    if not population:
+        sample_adjust = 1.0
+
+    n = 0
+    meandiffs = 0.0
+    mean = 0.0
+
+    for x in values[beg:]:
+        n += 1
+        delta = x - mean
+        mean += delta / n
+        meandiffs += delta * (x - mean)
+
+    return meandiffs / (itemcnt - sample_adjust)
+
+
 def varp_values(values, period=None):
     """Returns list of running population variances.
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :rtype: list of windowed population variances.
 
     Examples:
@@ -308,17 +414,32 @@ def varp_values(values, period=None):
     >>> ["%.2f" % x for x in results]
     ['0.00', '4.00', '4.67', '4.67', '13.56', '29.56', '30.89']
     """
+    return _varbases(values, period, population=True)
+
+
+def varp_value(values, period=None):
+    """Returns the final population variance.
+
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
+    :rtype: the final population variance.
+
+    Examples:
+    >>> values = [34, 30, 29, 34, 38, 25, 35]
+    >>> result = varp_value(values, 3)  #using 3 period window.
+    >>> "%.2f" % result
+    '30.89'
+    """
     return _varbase(values, period, population=True)
 
 
 def var_values(values, period=None):
     """Returns list of running sample variances.
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :rtype: list of windowed sample variances.
 
     Examples:
@@ -327,17 +448,32 @@ def var_values(values, period=None):
     >>> ["%.2f" % x for x in results]
     ['0.00', '8.00', '7.00', '7.00', '20.33', '44.33', '46.33']
     """
+    return _varbases(values, period)
+
+
+def var_value(values, period=None):
+    """Returns the final sample variance.
+
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
+    :rtype: final sample variance.
+
+    Examples:
+    >>> values = [34, 30, 29, 34, 38, 25, 35]
+    >>> result = var_value(values, 3)  #using 3 period window.
+    >>> "%.2f" % result
+    '46.33'
+    """
     return _varbase(values, period)
 
 
 def stdp_values(values, period=None):
     """Returns list of running population standard deviations.
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :rtype: list of windowed population standard deviations.
 
     Examples:
@@ -346,21 +482,41 @@ def stdp_values(values, period=None):
     >>> ["%.2f" % x for x in results]
     ['0.00', '2.00', '2.16', '2.16', '3.68', '5.44', '5.56']
     """
-    results = _varbase(values, period, population=True)
+    results = _varbases(values, period, population=True)
 
     _sqrt = math.sqrt
 
     return [_sqrt(x) for x in results]
 
 
+def stdp_value(values, period=None):
+    """Returns final population standard deviation.
+
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
+    :rtype: final population standard deviation.
+
+    Examples:
+    >>> values = [34, 30, 29, 34, 38, 25, 35]
+    >>> result = stdp_value(values, 3)  #using 3 period window.
+    >>> "%.2f" % result
+    '5.56'
+    """
+    result = _varbase(values, period, population=True)
+
+    if result:
+        result = math.sqrt(result)
+
+    return result
+
+
 def std_values(values, period=None):
     """Returns list of running sample standard deviations.
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :rtype: list of windowed sample standard deviations.
 
     Examples:
@@ -369,21 +525,41 @@ def std_values(values, period=None):
     >>> ["%.2f" % x for x in results]
     ['0.00', '2.83', '2.65', '2.65', '4.51', '6.66', '6.81']
     """
-    results = _varbase(values, period)
+    results = _varbases(values, period)
 
     _sqrt = math.sqrt
 
     return [_sqrt(x) for x in results]
 
 
+def std_value(values, period=None):
+    """Returns final sample standard deviation.
+
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
+    :rtype: final sample standard deviation.
+
+    Examples:
+    >>> values = [34, 30, 29, 34, 38, 25, 35]
+    >>> result = std_value(values, 3)  #using 3 period window.
+    >>> "%.2f" % result
+    '6.81'
+    """
+    result = _varbase(values, period)
+
+    if result:
+        result = math.sqrt(result)
+
+    return result
+
+
 def max_values(values, period=None):
     """Returns list of running maximums.
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :rtype: list of windowed maximums.
 
     Examples:
@@ -421,11 +597,9 @@ def max_values(values, period=None):
 def top_values(values, period=None, num=1):
     """Returns list of top num items.
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :param num: the num in the top num items.
     :rtype: list of windowed top num items.
 
@@ -470,11 +644,9 @@ def top_values(values, period=None, num=1):
 def min_values(values, period=None):
     """Returns list of minimum items.
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :rtype: list of windowed minimum items.
 
     Examples:
@@ -511,11 +683,9 @@ def min_values(values, period=None):
 def bottom_values(values, period=None, num=1):
     """Returns list of bottom num items.
 
-    :param values: list of values to iterate and compute stats.
-    :param period: (optional) # of items to include in running window.
-        * 1 - includes current item only in window.
-        * 2 - includes current item and prior item in window.
-        * None - includes all values in window.
+    :param values: list of values to iterate and compute stat.
+    :param period: (optional) # of values included in computation.
+        * None - includes all values in computation.
     :param num: the num in the bottom num items.
     :rtype: list of windowed bottom num items.
 
